@@ -1,33 +1,33 @@
 # code-scanner-poc
 
-A professional Node.js + TypeScript project with modern ESLint, Prettier, and Yarn Berry configuration.
+Un proyecto profesional Node.js + TypeScript con configuración moderna de ESLint, Prettier y Yarn Berry.
 
-## Features
+## Características
 
-- **Node.js v24.11.0**: Version fixed via `.nvmrc`
-- **Yarn Berry (v4.10.3)**: Modern package manager with zero-installs support (disabled)
-- **TypeScript**: Robust configuration with strict type checking
-- **ESLint**: Modern flat config (eslint.config.js) with TypeScript support
-- **Prettier**: Code formatting with industry-standard rules
-- **Git Hooks with Husky**: Automated code quality checks before commits
-- **Conventional Commits**: Enforced commit message format with commitlint
-- **Scripts**: Development, build, linting, and formatting scripts
+- **Node.js v24.11.0**: Versión fijada mediante `.nvmrc`
+- **Yarn Berry (v4.10.3)**: Gestor de paquetes moderno con soporte zero-installs (deshabilitado)
+- **TypeScript**: Configuración robusta con verificación de tipos estricta
+- **ESLint**: Configuración flat moderna (eslint.config.js) con soporte TypeScript
+- **Prettier**: Formateo de código con reglas estándar de la industria
+- **Git Hooks con Husky**: Comprobaciones automáticas de calidad de código antes de los commits
+- **Conventional Commits**: Formato de mensajes de commit obligatorio con commitlint
+- **Scripts**: Scripts de desarrollo, construcción, linting y formateo
 
-## Prerequisites
+## Requisitos previos
 
-- Node.js v24.11.0 (use nvm: `nvm use`)
-- Corepack enabled (comes with Node.js 16.10+): `corepack enable`
+- Node.js v24.11.0
+- Corepack habilitado (viene con Node.js 16.10+)
 
-## Installation
+## Instalación
 
-The project uses Yarn Berry (v4.10.3) as its package manager, which is locked via the `packageManager` field in `package.json`. This ensures all contributors use the same version.
+El proyecto usa Yarn Berry (v4.10.3) como gestor de paquetes, que está bloqueado mediante el campo `packageManager` en `package.json`. Esto asegura que todos los colaboradores usen la misma versión.
 
 ```bash
-# Corepack will automatically use the correct Yarn version
+# Corepack usará automáticamente la versión correcta de Yarn
 yarn install
 ```
 
-If you don't have Corepack enabled:
+Si no tienes Corepack habilitado:
 
 ```bash
 corepack enable
@@ -36,31 +36,31 @@ yarn install
 
 ## Scripts
 
-All scripts use Yarn Berry:
+Todos los scripts usan Yarn Berry:
 
-### Development
+### Desarrollo
 
 ```bash
 yarn dev
 ```
 
-Runs the application in watch mode using tsx. Changes to source files will automatically restart the application.
+Ejecuta la aplicación en modo watch usando tsx. Los cambios en los archivos fuente reiniciarán automáticamente la aplicación.
 
-### Build
+### Construcción
 
 ```bash
 yarn build
 ```
 
-Compiles TypeScript to JavaScript in the `dist/` directory.
+Compila TypeScript a JavaScript en el directorio `dist/`.
 
-### Start
+### Inicio
 
 ```bash
 yarn start
 ```
 
-Runs the compiled application from the `dist/` directory. Make sure to build first.
+Ejecuta la aplicación compilada desde el directorio `dist/`. Asegúrate de construir primero.
 
 ### Linting
 
@@ -68,127 +68,127 @@ Runs the compiled application from the `dist/` directory. Make sure to build fir
 yarn lint
 ```
 
-Runs ESLint with zero warnings tolerance.
+Ejecuta ESLint con tolerancia cero a advertencias.
 
 ```bash
 yarn lint:fix
 ```
 
-Automatically fixes linting issues where possible.
+Corrige automáticamente los problemas de linting donde sea posible.
 
-### Formatting
+### Formateo
 
 ```bash
 yarn format
 ```
 
-Formats all TypeScript, JavaScript, and JSON files using Prettier.
+Formatea todos los archivos TypeScript, JavaScript y JSON usando Prettier.
 
 ```bash
 yarn format:check
 ```
 
-Checks if all files are formatted according to Prettier rules.
+Verifica si todos los archivos están formateados según las reglas de Prettier.
 
-### Type Checking
+### Verificación de tipos
 
 ```bash
 yarn typecheck
 ```
 
-Type-checks the project without emitting files.
+Verifica los tipos del proyecto sin emitir archivos.
 
-## Project Structure
+## Estructura del proyecto
 
 ```
 .
-├── src/              # TypeScript source files
-│   └── index.ts      # Main entry point
-├── dist/             # Compiled output (generated)
-├── .yarn/            # Yarn Berry cache (gitignored)
-├── .yarnrc.yml       # Yarn configuration
-├── yarn.lock         # Yarn dependency lockfile
-├── .nvmrc            # Node version specification
-├── tsconfig.json     # TypeScript configuration
-├── eslint.config.js  # ESLint flat config
-├── .prettierrc       # Prettier configuration
-└── package.json      # Project dependencies and scripts
+├── src/              # Archivos fuente TypeScript
+│   └── index.ts      # Punto de entrada principal
+├── dist/             # Salida compilada (generada)
+├── .yarn/            # Caché de Yarn Berry (gitignored)
+├── .yarnrc.yml       # Configuración de Yarn
+├── yarn.lock         # Archivo de bloqueo de dependencias de Yarn
+├── .nvmrc            # Especificación de versión de Node
+├── tsconfig.json     # Configuración de TypeScript
+├── eslint.config.js  # Configuración flat de ESLint
+├── .prettierrc       # Configuración de Prettier
+└── package.json      # Dependencias y scripts del proyecto
 ```
 
-## Configuration
+## Configuración
 
-### Package Manager (Yarn Berry)
+### Gestor de paquetes (Yarn Berry)
 
-The project uses Yarn Berry v4.10.3 (LTS) with the following configuration:
+El proyecto usa Yarn Berry v4.10.3 (LTS) con la siguiente configuración:
 
-- **Node Linker**: `node-modules` (most compatible, uses traditional node_modules)
-- **Immutable Installs**: Disabled for development flexibility
-- **Global Cache**: Disabled (local cache only)
-- **Version Locking**: Via `packageManager` field in package.json
+- **Node Linker**: `node-modules` (más compatible, usa node_modules tradicional)
+- **Immutable Installs**: Deshabilitado para flexibilidad en desarrollo
+- **Global Cache**: Deshabilitado (solo caché local)
+- **Version Locking**: Mediante el campo `packageManager` en package.json
 
-This ensures all contributors use the exact same Yarn version automatically.
+Esto asegura que todos los colaboradores usen exactamente la misma versión de Yarn automáticamente.
 
 ### TypeScript (tsconfig.json)
 
-- Strict mode enabled
-- ES2022 target
-- NodeNext module resolution
-- Source maps and declarations generated
-- Comprehensive type checking flags
+- Modo estricto habilitado
+- Target ES2022
+- Resolución de módulos NodeNext
+- Source maps y declaraciones generados
+- Flags de verificación de tipos exhaustivos
 
 ### ESLint (eslint.config.js)
 
-- Modern flat config format
-- TypeScript-ESLint with recommended rules
-- Prettier integration
-- Custom rules for code quality
-- Type-aware linting
+- Formato de configuración flat moderno
+- TypeScript-ESLint con reglas recomendadas
+- Integración con Prettier
+- Reglas personalizadas para calidad de código
+- Linting con conciencia de tipos
 
 ### Prettier (.prettierrc)
 
-- 100 character line width
-- Single quotes
-- Semicolons
-- 2-space indentation
-- Trailing commas (ES5)
+- Ancho de línea de 100 caracteres
+- Comillas simples
+- Punto y coma
+- Indentación de 2 espacios
+- Comas finales (ES5)
 
-## Development Workflow
+## Flujo de trabajo de desarrollo
 
-1. Ensure you have Node.js v24.11.0 installed (`nvm use`)
-2. Enable Corepack if not already enabled: `corepack enable`
-3. Install dependencies: `yarn install`
-4. Make changes to files in `src/`
-5. Run `yarn dev` for live development
-6. Run `yarn lint` to check for issues
-7. Run `yarn format` to format code
-8. Run `yarn build` to compile
-9. Run `yarn start` to execute the compiled code
+1. Asegúrate de tener Node.js v24.11.0 instalado (`nvm use`)
+2. Habilita Corepack si no está ya habilitado: `corepack enable`
+3. Instala las dependencias: `yarn install`
+4. Haz cambios en los archivos de `src/`
+5. Ejecuta `yarn dev` para desarrollo en vivo
+6. Ejecuta `yarn lint` para verificar problemas
+7. Ejecuta `yarn format` para formatear el código
+8. Ejecuta `yarn build` para compilar
+9. Ejecuta `yarn start` para ejecutar el código compilado
 
-## Code Quality
+## Calidad de código
 
-This project enforces high code quality standards:
+Este proyecto impone estándares de alta calidad de código:
 
-- **Type Safety**: Strict TypeScript with comprehensive checks
-- **Linting**: ESLint with zero warnings tolerance
-- **Formatting**: Automatic code formatting with Prettier
-- **Consistency**: Standardized configuration across the project
+- **Seguridad de tipos**: TypeScript estricto con verificaciones exhaustivas
+- **Linting**: ESLint con tolerancia cero a advertencias
+- **Formateo**: Formateo automático de código con Prettier
+- **Consistencia**: Configuración estandarizada en todo el proyecto
 
 ### Git Hooks
 
-The project uses Husky to enforce code quality standards automatically:
+El proyecto usa Husky para imponer estándares de calidad de código automáticamente:
 
-#### Pre-commit Hook
+#### Hook de pre-commit
 
-Before each commit, the following checks are automatically run on staged files:
+Antes de cada commit, las siguientes comprobaciones se ejecutan automáticamente en los archivos preparados:
 
-- **ESLint**: Lints and auto-fixes JavaScript/TypeScript files
-- **Prettier**: Formats code according to project rules
+- **ESLint**: Hace linting y auto-corrige archivos JavaScript/TypeScript
+- **Prettier**: Formatea el código según las reglas del proyecto
 
-If any issues cannot be auto-fixed, the commit will be blocked until you resolve them.
+Si algún problema no puede corregirse automáticamente, el commit se bloqueará hasta que los resuelvas.
 
-#### Commit Message Hook
+#### Hook de mensaje de commit
 
-All commit messages must follow the [Conventional Commits](https://www.conventionalcommits.org/) format:
+Todos los mensajes de commit deben seguir el formato [Conventional Commits](https://www.conventionalcommits.org/):
 
 ```
 <type>(<optional scope>): <description>
@@ -198,21 +198,21 @@ All commit messages must follow the [Conventional Commits](https://www.conventio
 [optional footer]
 ```
 
-**Allowed types:**
+**Tipos permitidos:**
 
-- `feat`: A new feature
-- `fix`: A bug fix
-- `docs`: Documentation only changes
-- `style`: Changes that don't affect code meaning (white-space, formatting, etc.)
-- `refactor`: Code change that neither fixes a bug nor adds a feature
-- `perf`: Performance improvements
-- `test`: Adding missing tests or correcting existing tests
-- `build`: Changes to build system or dependencies
-- `ci`: Changes to CI configuration files and scripts
-- `chore`: Other changes that don't modify src or test files
-- `revert`: Reverts a previous commit
+- `feat`: Una nueva funcionalidad
+- `fix`: Una corrección de error
+- `docs`: Cambios solo en la documentación
+- `style`: Cambios que no afectan el significado del código (espacios en blanco, formateo, etc.)
+- `refactor`: Cambio de código que no corrige un error ni añade una funcionalidad
+- `perf`: Mejoras de rendimiento
+- `test`: Añadir pruebas faltantes o corregir pruebas existentes
+- `build`: Cambios en el sistema de construcción o dependencias
+- `ci`: Cambios en archivos de configuración y scripts de CI
+- `chore`: Otros cambios que no modifican archivos src o test
+- `revert`: Revierte un commit anterior
 
-**Examples:**
+**Ejemplos:**
 
 ```bash
 git commit -m "feat: add barcode scanner support"
@@ -221,4 +221,4 @@ git commit -m "docs: update installation instructions"
 git commit -m "refactor: improve HID device discovery logic"
 ```
 
-Invalid commit messages will be rejected before the commit is created.
+Los mensajes de commit inválidos serán rechazados antes de que se cree el commit.

@@ -3,7 +3,7 @@
 **Proof of Concept** para escaneo de códigos de barras y QR mediante dispositivos HID en **Node.js con TypeScript**.
 
 > [!IMPORTANT]
-> Consulta [GUIDELINES.md](./GUIDELINES.md) para conocer los objetivos del proyecto, estándares de calidad de código y flujo de trabajo recomendado.
+> Consulta [GUIDELINES.md](./docs/GUIDELINES.md) para conocer los objetivos del proyecto, estándares de calidad de código y flujo de trabajo recomendado.
 
 ## Características
 

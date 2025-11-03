@@ -1,9 +1,3 @@
-# Plan de desarrollo – code-scanner-poc
-
-**GitHub Projects – Sprint 2 Semanas**  
-**Tiempo total:** **85 h** → **Javier**  
-**Duración:** **2 semanas** (~42.5 h/semana) → **buffer 12 %**
-
 ## Tareas
 
 | ID      | Tarea                                                                                                                                                                                            | Estimación | Esfuerzo | Prioridad |
@@ -17,19 +11,5 @@
 | **T07** | Tests críticos (mock HID, parsing, reintentos, fallos de red)                                                                                                                                    | **8 h**    | Alto     | Alta      |
 | **T08** | Scripts de servicio (Windows NSSM + Linux systemd)                                                                                                                                               | **4 h**    | Medio    | Alta      |
 | **T09** | Documentación (README, .env.example, instalación, configuración MIP Zeo)                                                                                                                         | **4 h**    | Medio    | Alta      |
-| **T12** | Puesta en producción en 10–15 puestos: despliegue automatizado, configuración por equipo (JSON/ENV), instalación remota, verificación en campo, informe de rollout                               | **15 h**   | Alto     | Alta      |
-
-## Distribución de tiempo (2 semanas)
-
-| Rol        | Horas totales | Horas/semana |
-| ---------- | ------------- | ------------ |
-| **Javier** | **85 h**      | **42.5 h**   |
-| **Total**  | **85 h**      | **42.5 h**   |
-
-> **Desglose Javier (85 h):**
->
-> - **8 h** → T01 (setup avanzado + automatización)
-> - **13 h** → T05 (emisión robusta a MIP Zeo)
-> - **39 h** → T02–T04, T06–T09 (desarrollo técnico)
-> - **15 h** → T12 (despliegue en producción)
-> - **10 h** → Buffer (12 %) para imprevistos, pruebas en campo, ajustes MIP Zeo
+| **T12** | Puesta en producción (1 puesto): despliegue remoto, configuración (JSON/ENV), verificación en campo                                                                                              | **2 h**    | Alto     | Alta      |
+| **T13** | Gestión de proyecto                                                                                                                                                                              | **13 h**   | Baja     | Media     |

@@ -1,17 +1,18 @@
 import HID from 'node-hid';
 
-//Exportamos la función para listar todos los dispositivos con el vendorId introducido.
+//We export the function to list all devices with the entered vendorId.
 export async function listHidDevices(vendorId: number): Promise<void> {
-  //Recogemos todos los dispositivos
+  //We collect all the devices
   const devices = await HID.devicesAsync();
 
-  //Filtramos por vendorId
+  //We filter by vendorId
   const filtered = devices.filter((device) => device.vendorId === vendorId);
 
-  //Control si lo recoge quiero que me diga que no lo recoge si lo recoge que los muestre
+  //Check if he picks it up; I want him to tell me if he doesn't pick it up, and if he does pick it up, show them.
   if (filtered.length === 0) {
     console.warn('No se ha encontrado ningun dispositivo');
-  } else {
-    console.log(filtered);
+    return;
   }
+
+  console.log(filtered);
 }

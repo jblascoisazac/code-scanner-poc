@@ -1,3 +1,6 @@
 import { listHidDevices } from './devices/hidDiscovery.js';
 
-await listHidDevices(0x0c2e);
+const vendorId = parseInt(process.env['VENDOR_ID'] ?? '');
+const productId = process.env['PRODUCT'] ?? '';
+
+await listHidDevices(vendorId, productId);

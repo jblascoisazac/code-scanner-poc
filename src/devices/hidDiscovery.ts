@@ -1,41 +1,81 @@
 import HID from 'node-hid';
 import fs from 'fs';
 import path from 'path';
+import { EventEmitter } from 'events';
 
-function saveDevice(filtered: HID.Device[]): void {
-  const jsonString = JSON.stringify(filtered, null, 2);
+function saveDevice(found: HID.Device[]): void {
+  const jsonString = JSON.stringify(found, null, 2);
   const filePath = path.resolve('./devices.json');
 
   try {
-    if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, jsonString);
-      return;
-    }
-
-    fs.writeFileSync('devices.json', jsonString);
+    fs.writeFileSync(filePath, jsonString);
   } catch (err) {
     console.error('Error writing file:', err);
   }
 }
 
-//We export the function to list all devices with the entered vendorId.
-export async function listHidDevices(vendorId: number, productId: string): Promise<void> {
-  //We collect all the devices
+export const hidEmitter = new EventEmitter();
 
-  let filtered: HID.Device[] = [];
+let isConnected = false;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+let currentPath: string | null = null;
+let serialNumber: string | undefined;
 
-  while (filtered.length === 0) {
-    const devices = await HID.devicesAsync();
+let filtered: HID.Device[] = [];
+
+export function listHidDevices(vendorId: number, productName: string): void {
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
+  setInterval(async () => {
+    let devices: HID.Device[] = [];
+
+    try {
+      devices = await HID.devicesAsync();
+    } catch (e) {
+      console.error('Error scanning devices:', e);
+      return;
+    }
+
     filtered = devices.filter(
-      (device) => device.vendorId === vendorId && device.product === productId
+      (device) => device.vendorId === vendorId && device.product === productName
     );
 
-    if (filtered.length > 0) {
-      saveDevice(filtered);
-      console.log('Dispositivo detectado');
-      break;
+    const found = filtered[0];
+
+    // --- Desconectado ---
+    if (isConnected && !found) {
+      console.warn('disconnect');
+      isConnected = false;
+      currentPath = null;
+      // Mantenemos serialNumber para poder reconectar después
+      hidEmitter.emit('device:disconnected');
+      return; // Importante: retorno temprano
     }
-    console.warn('Dispositivo no detectado');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-  }
+
+    // Si no hay dispositivo, no hay más que hacer
+    if (!found) {
+      return;
+    }
+
+    // --- Reconectado ---
+    if (!isConnected && serialNumber) {
+      // Si tenemos un serialNumber guardado, comparamos
+      if (found.serialNumber === serialNumber) {
+        console.warn('reconnect - matched by serial number');
+        isConnected = true;
+        currentPath = found.path ?? null;
+        hidEmitter.emit('device:reconnect', found);
+        return; // Importante: retorno temprano
+      }
+    }
+
+    // --- Conectado por primera vez ---
+    if (!isConnected) {
+      isConnected = true;
+      currentPath = found.path ?? null;
+      serialNumber = found.serialNumber; // Guardamos el serial para futuras reconexiones
+      saveDevice(filtered);
+      hidEmitter.emit('device:connected', found);
+      return; // Importante: retorno temprano
+    }
+  }, 1000);
 }

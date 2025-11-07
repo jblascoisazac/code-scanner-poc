@@ -1,23 +1,43 @@
 import { hidEmitter, listHidDevices } from './devices/hidDiscovery.js';
+import { HidReader } from './devices/hidReader.js';
 import { logger } from './infra/logger.js';
 
 const vendorIdRaw = process.env['VENDOR_ID'];
-if (vendorIdRaw === undefined || vendorIdRaw.trim() === '' || Number.isNaN(Number(vendorIdRaw))) {
-  throw new Error('VENDOR_ID environment variable must be set to a valid integer string.');
-}
-const vendorId = parseInt(vendorIdRaw, 10);
-const productId = process.env['PRODUCT'] ?? '';
+if (!vendorIdRaw) throw new Error('VENDOR_ID must be set');
+const vendorId = vendorIdRaw.trim().toLowerCase().startsWith('0x')
+  ? parseInt(vendorIdRaw, 16)
+  : parseInt(vendorIdRaw, 10);
+
+const productName = process.env['PRODUCT'] ?? '';
+
+const reader = new HidReader();
+
+reader.on('scan:raw', (line) => {
+  logger.info(`Código leído: ${line}`);
+});
+
+reader.on('error', (err) => {
+  logger.error({ err }, 'Error en HID');
+});
 
 hidEmitter.on('device:connected', () => {
   logger.info('Event → Connected');
+  reader.start();
 });
 
 hidEmitter.on('device:reconnect', () => {
   logger.info('Event → Reconnected');
+  reader.start();
 });
 
 hidEmitter.on('device:disconnected', () => {
   logger.info('Event → Disconnected');
+  reader.stop();
 });
 
-listHidDevices(vendorId, productId);
+listHidDevices(vendorId, productName);
+
+process.on('SIGINT', () => {
+  reader.stop();
+  process.exit(0);
+});

@@ -8,7 +8,7 @@
   "packageManager": "yarn@4.10.3",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --env-file=.env src/index.ts",
     "start": "node dist/index.js",
     "lint": "eslint . --max-warnings 0",
     "lint:fix": "eslint . --fix",
@@ -48,5 +48,9 @@
     "*.{json,md}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "node-hid": "^3.2.0",
+    "pino": "^10.1.0"
   }
 }

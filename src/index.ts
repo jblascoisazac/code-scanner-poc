@@ -1,37 +1,18 @@
-/**
- * Main entry point for the application
- */
+import { hidEmitter, listHidDevices } from './devices/hidDiscovery.js';
 
-interface GreetingConfig {
-  name: string;
-  formal?: boolean;
-}
+const vendorId = parseInt(process.env['VENDOR_ID'] ?? '');
+const productId = process.env['PRODUCT'] ?? '';
 
-/**
- * Generates a greeting message
- * @param config - Configuration for the greeting
- * @returns A greeting string
- */
-function greet(config: GreetingConfig): string {
-  const { name, formal = false } = config;
-  if (formal) {
-    return `Good day, ${name}. How do you do?`;
-  }
-  return `Hello, ${name}!`;
-}
+hidEmitter.on('device:connected', () => {
+  console.log('Evento → Conectado:');
+});
 
-/**
- * Main application function
- */
-function main(): void {
-  const message = greet({ name: 'World' });
-  // eslint-disable-next-line no-console
-  console.log(message);
+hidEmitter.on('device:reconnect', () => {
+  console.log('Evento → Reconectado:');
+});
 
-  const formalMessage = greet({ name: 'Distinguished Guest', formal: true });
-  // eslint-disable-next-line no-console
-  console.log(formalMessage);
-}
+hidEmitter.on('device:disconnected', () => {
+  console.log('Evento → Desconectado');
+});
 
-// Run the application
-main();
+listHidDevices(vendorId, productId);

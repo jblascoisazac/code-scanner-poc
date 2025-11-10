@@ -1,5 +1,21 @@
 # Copilot Instructions for code-scanner-poc
 
+## Project Overview
+
+This is a **Proof of Concept** for barcode and QR code scanning using HID devices in Node.js with TypeScript. The application acts as a background service that:
+
+- Reads 1D barcodes (Code 128, Code 39, EAN, UPC) via HID Bar Code Scanner protocol
+- Operates in background without requiring UI focus
+- Emits JSON events to external services (HTTP/MQTT/AMQP)
+- Provides intelligent HID device discovery and automatic reconnection
+- Includes basic observability (logging, health checks)
+
+**Key Hardware:** Honeywell Voyager 1202g (1D laser scanner) with CCB00-010BT base, configured in **HID Bar Code Scanner (ASCII)** mode for non-intrusive background operation.
+
+**Future-proof:** Architecture supports 2D scanners (QR/DataMatrix) with minimal code changes when hardware is upgraded.
+
+For complete technical specifications, see [docs/GUIDELINES.md](../docs/GUIDELINES.md).
+
 ## Tech Stack & Tooling
 
 - **Runtime:** Node.js v24.11.0 (locked via `.nvmrc` - use `nvm use`)
@@ -10,6 +26,27 @@
 - **Commit Messages:** Conventional Commits enforced via `commitlint`
 
 ## Development Workflow
+
+### Prerequisites
+
+1. **Node.js v24.11.0** - Use a Node version manager (nvm, fnm, asdf, volta):
+   ```bash
+   nvm use  # or fnm use, etc.
+   ```
+
+2. **Corepack enabled** - Required for Yarn Berry:
+   ```bash
+   corepack enable
+   ```
+
+3. **Environment variables** - Copy `.env.example` to `.env` and configure:
+   ```bash
+   cp .env.example .env
+   # Set VENDOR_ID to the HID device vendor ID (required)
+   # Set PRODUCT to filter by product name (optional)
+   ```
+
+### Common Commands
 
 ```bash
 # Install dependencies (Corepack automatically uses correct Yarn version)
@@ -25,9 +62,21 @@ yarn format
 
 # Build for production
 yarn build
+
+# Run compiled version
+yarn start
 ```
 
 **Critical:** Always use `yarn dev` for live development - it uses `tsx watch` for instant feedback.
+
+### Running the Application
+
+The application requires a connected HID barcode scanner and proper environment configuration:
+
+1. Connect the barcode scanner via USB
+2. Ensure device is in **HID Bar Code Scanner (ASCII)** mode (not keyboard mode)
+3. Set `VENDOR_ID` in `.env` (e.g., for Honeywell devices: `0x0C2E` or `3118`)
+4. Run `yarn dev` and scan a barcode - you should see connection and scan events in the console
 
 ## TypeScript Conventions
 
@@ -143,11 +192,65 @@ git commit -m "chore: update dependencies"
 
 ## Project Structure
 
-Current structure (minimal POC):
+Current structure:
 
 ```
 src/
-└── index.ts              # Main entry point
+├── devices/
+│   └── hidDiscovery.ts   # HID device enumeration, discovery, and caching
+├── infra/
+│   └── logger.ts          # Pino logger configuration
+└── index.ts              # Main entry point - event listeners and startup
 ```
 
-When adding new modules, follow modular architecture principles with clear separation of concerns.
+**Architecture principles:**
+- **Modular design:** Clear separation between device layer, domain logic, and infrastructure
+- **Event-driven:** Uses EventEmitter for device lifecycle (connected, reconnected, disconnected)
+- **Type-safe:** Strict TypeScript with comprehensive type checking
+- **Observable:** Structured logging with Pino for production debugging
+
+When adding new modules, follow modular architecture principles with clear separation of concerns. See [docs/GUIDELINES.md](../docs/GUIDELINES.md) for detailed architecture documentation.
+
+## Key Dependencies
+
+- **node-hid** (v3.2.0): Native HID device access for barcode scanner communication
+- **pino** (v10.1.0): High-performance structured logging
+- **tsx**: TypeScript execution and watch mode for development
+- **typescript-eslint**: Type-aware linting with strict rules
+
+## Testing Strategy
+
+**Current state:** This is a POC with no formal test suite yet.
+
+**When adding tests:**
+- Use a testing framework consistent with Node.js ecosystem (e.g., Vitest, Jest)
+- Mock HID devices using `node-hid` test utilities or dependency injection
+- Test event emitters, device discovery logic, and error handling
+- Add test scripts to `package.json` following the pattern: `"test": "vitest"`
+- Update this documentation with testing commands
+
+## Troubleshooting
+
+### Common Issues
+
+**"VENDOR_ID environment variable must be set"**
+- Solution: Copy `.env.example` to `.env` and set `VENDOR_ID` to your device's vendor ID
+- For Honeywell devices: use `0x0C2E` (3118 decimal)
+
+**"Corepack must be enabled"**
+- Solution: Run `corepack enable` before `yarn install`
+
+**"Device not found" or no scan events**
+- Verify device is connected via USB
+- Check device is in HID Bar Code Scanner mode (not keyboard wedge mode)
+- On Linux, may require udev rules for HID device permissions
+- Use `yarn dev` with debug logging to inspect device enumeration
+
+**Linting/type errors on commit**
+- Pre-commit hooks run automatically via Husky
+- Fix errors with `yarn lint:fix` and `yarn format`
+- Ensure no unused variables/parameters (use `_` prefix if intentional)
+
+**Import resolution errors**
+- ESM modules require `.js` extensions in imports (not `.ts`)
+- Example: `import { helper } from './utils/helper.js'` (not `./utils/helper`)

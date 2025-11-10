@@ -8,9 +8,23 @@ const vendorId = vendorIdRaw.trim().toLowerCase().startsWith('0x')
   ? parseInt(vendorIdRaw, 16)
   : parseInt(vendorIdRaw, 10);
 
+if (Number.isNaN(vendorId)) {
+  throw new Error(`VENDOR_ID is not a valid number: "${vendorIdRaw}"`);
+}
+
+const productIdRaw = process.env['PRODUCT_ID'];
+if (!productIdRaw) throw new Error('PRODUCT_ID must be set');
+const productId = productIdRaw.trim().toLowerCase().startsWith('0x')
+  ? parseInt(productIdRaw, 16)
+  : parseInt(productIdRaw, 10);
+
+if (Number.isNaN(productId)) {
+  throw new Error(`PRODUCT_ID is not a valid number: "${productIdRaw}"`);
+}
+
 const productName = process.env['PRODUCT'] ?? '';
 
-const reader = new HidReader();
+const reader = new HidReader(vendorId, productId);
 
 reader.on('scan:raw', (line) => {
   logger.info(`Código leído: ${line}`);

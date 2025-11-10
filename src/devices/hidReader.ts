@@ -1,37 +1,25 @@
 import { EventEmitter } from 'events';
 import HID from 'node-hid';
 
+const RECONNECT_DELAY_MS = 500;
+const RECONNECT_RETRY_DELAY_MS = 1000;
+
 export class HidReader extends EventEmitter {
   private device: HID.HID | null = null;
   private buffer: Buffer = Buffer.alloc(0);
   private vendorId: number;
   private productId: number;
 
-  constructor() {
+  constructor(vendorId: number, productId: number) {
     super();
-
-    const vendorIdRaw = process.env['VENDOR_ID'];
-    const productIdRaw = process.env['PRODUCT'];
-
-    if (!vendorIdRaw) {
-      throw new Error('VENDOR_ID no está definido');
-    }
-    if (!productIdRaw) {
-      throw new Error('PRODUCT_ID no está definido');
-    }
-
-    this.vendorId = vendorIdRaw.trim().toLowerCase().startsWith('0x')
-      ? parseInt(vendorIdRaw, 16)
-      : parseInt(vendorIdRaw, 10);
-
-    this.productId = productIdRaw.trim().toLowerCase().startsWith('0x')
-      ? parseInt(productIdRaw, 16)
-      : parseInt(productIdRaw, 10);
+    this.vendorId = vendorId;
+    this.productId = productId;
   }
 
-  /*Starts the HID reader instance. this function  stores all the devices HID and then filters for the ones that
-  matches the requeriments
-  */
+  /**
+   * Starts the HID reader instance.
+   * This function stores all HID devices and then filters for the ones that match the requirements.
+   */
   start(): void {
     if (this.device) return;
 
@@ -43,7 +31,7 @@ export class HidReader extends EventEmitter {
           (d.productId === this.productId || d.product === process.env['PRODUCT'])
       );
 
-      if (!found || !found.path) {
+      if (!found?.path) {
         throw new Error('No se encontró el dispositivo HID con el vendorId/productId especificado');
       }
 
@@ -53,15 +41,15 @@ export class HidReader extends EventEmitter {
       this.device.on('error', (err: Error) => {
         this.emit('error', err);
         this.stop();
-        setTimeout(() => this.start(), 500);
+        setTimeout(() => this.start(), RECONNECT_DELAY_MS);
       });
     } catch (err) {
       this.emit('error', err instanceof Error ? err : new Error(String(err)));
-      setTimeout(() => this.start(), 1000);
+      setTimeout(() => this.start(), RECONNECT_RETRY_DELAY_MS);
     }
   }
 
-  //function to stop the instance, on triggered it removes the listeners an sets the buffer to 0
+  //function to stop the instance, on triggered it removes the listeners and sets the buffer to 0
   stop(): void {
     if (!this.device) return;
     this.device.removeAllListeners('data');
@@ -87,6 +75,7 @@ export class HidReader extends EventEmitter {
     while (idx !== -1) {
       const line = Buffer.from(this.buffer.subarray(0, idx))
         .toString('utf8')
+        // eslint-disable-next-line no-control-regex
         .replace(/\x00/g, '')
         .trim();
 

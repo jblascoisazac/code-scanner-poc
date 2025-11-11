@@ -2,8 +2,6 @@ import { EventEmitter } from 'events';
 import HID from 'node-hid';
 
 // Delay constants for reconnecting in case of error or device absence
-const RECONNECT_DELAY_MS = 500; // Short delay after a disconnect
-const RECONNECT_RETRY_DELAY_MS = 1000; // Longer delay if initial connection fails
 const CARRIAGE_RETURN = 0x0d; // Hex value of \r
 const ASCII_PRINTABLE_START = 0x20;
 const ASCII_PRINTABLE_END = 0x7e;
@@ -11,66 +9,26 @@ const ASCII_PRINTABLE_END = 0x7e;
 export class HidReader extends EventEmitter {
   private device: HID.HID | null = null; // Reference to the connected HID device
   private buffer: Buffer = Buffer.alloc(0); // Buffer to accumulate incoming data
-  private vendorId: number; // HID vendor ID
-  private productName: string; // HID product name (string identifier)
-
   private flushTimer?: NodeJS.Timeout | undefined; // Timer to flush incomplete buffer
   private readonly FLUSH_TIMEOUT = 100; // Timeout to flush buffer if no CR received
 
-  constructor(vendorId: number, productName: string) {
+  constructor() {
     super();
-    this.vendorId = vendorId;
-    this.productName = productName;
   }
 
-  /**
-   * Starts the HID reader by finding the matching device and registering data/error listeners.
-   * Automatically retries on failure or disconnect.
-   */
-  start(): void {
-    if (this.device) return;
-
-    try {
-      const devices = HID.devices();
-      const found = devices.find(
-        (d) => d.vendorId === this.vendorId && d.product === this.productName
-      );
-
-      if (!found?.path) {
-        throw new Error('The HID device with the specified vendorId/productName was not found.');
-      }
-
-      this.device = new HID.HID(found.path);
-
-      // Listen for incoming data and errors
-      this.device.on('data', this.onData.bind(this));
-      this.device.on('error', (err: Error) => {
-        this.emit('error', err);
-        this.stop();
-        setTimeout(() => this.start(), RECONNECT_DELAY_MS);
-      });
-    } catch (err) {
-      this.emit('error', err instanceof Error ? err : new Error(String(err)));
-      setTimeout(() => this.start(), RECONNECT_RETRY_DELAY_MS);
+  read(found: HID.Device): void {
+    if (!found.path) {
+      throw new Error('Device path not found');
     }
-  }
 
-  /**
-   * Stops the HID reader by removing listeners, closing the device,
-   * and clearing the internal buffer.
-   */
-  stop(): void {
-    if (!this.device) return;
-    this.device.removeAllListeners('data');
-    this.device.removeAllListeners('error');
-    this.device.close();
-    this.device = null;
-    this.buffer = Buffer.alloc(0);
+    this.device = new HID.HID(found.path);
+
+    this.device.on('data', (data: Buffer) => this.onData(data));
   }
 
   /**
    * Private helper to clean and normalize a scanned line.
-   * Removes null bytes, trims whitespace, and removes known HID prefixes/suffixes.
+   * Removes null bytes, trims whitespace
    */
   private _cleanLine(raw: Buffer | string): string {
     return raw
@@ -85,34 +43,31 @@ export class HidReader extends EventEmitter {
    * Also handles flushing partial lines and limiting buffer size.
    */
   private _processBuffer(): void {
-    let idx = this.buffer.indexOf(CARRIAGE_RETURN);
-
-    // Process all complete lines in the buffer
-    while (idx !== -1) {
-      const line = this._cleanLine(this.buffer.subarray(0, idx));
-      if (line.length) this.emit('scan:raw', line);
-
-      this.buffer = Buffer.from(this.buffer.subarray(idx + 1));
-      idx = this.buffer.indexOf(CARRIAGE_RETURN);
-    }
-
-    // Flush remaining buffer after a timeout if no CR received
-    if (this.buffer.length > 0) {
-      this.flushTimer = setTimeout(() => {
-        if (this.buffer.length > 0) {
-          const line = this._cleanLine(this.buffer);
-          if (line.length) this.emit('scan:raw', line);
-          this.buffer = Buffer.alloc(0);
-        }
-        this.flushTimer = undefined;
-      }, this.FLUSH_TIMEOUT);
-    }
-
-    // Limit buffer size to avoid excessive memory usage
     const MAX_BUFFER = 16 * 1024;
+
+    // Limita el tamaño del buffer (por seguridad)
     if (this.buffer.length > MAX_BUFFER) {
       this.buffer = Buffer.from(this.buffer.subarray(this.buffer.length - MAX_BUFFER));
     }
+
+    // Si ya hay un temporizador, lo reiniciamos (esperar más datos)
+    if (this.flushTimer) clearTimeout(this.flushTimer);
+
+    // Programamos un flush único después del timeout
+    this.flushTimer = setTimeout(() => {
+      // Buscar líneas completas separadas por \r
+      const parts = this.buffer.toString().split(String.fromCharCode(CARRIAGE_RETURN));
+
+      // Procesar todas las partes menos la última si está vacía
+      for (const part of parts) {
+        const line = this._cleanLine(Buffer.from(part));
+        if (line.length) this.emit('scan:raw', line);
+      }
+
+      // Vaciar buffer y limpiar el temporizador
+      this.buffer = Buffer.alloc(0);
+      this.flushTimer = undefined;
+    }, this.FLUSH_TIMEOUT);
   }
 
   /**
@@ -137,21 +92,5 @@ export class HidReader extends EventEmitter {
     }
 
     this._processBuffer();
-  }
-
-  /**
-   * Cleans up the reader before destruction.
-   * Flushes any remaining data and clears timers.
-   */
-  public destroy(): void {
-    if (this.flushTimer) {
-      clearTimeout(this.flushTimer);
-      this.flushTimer = undefined;
-    }
-    if (this.buffer.length > 0) {
-      const line = this._cleanLine(this.buffer);
-      if (line.length) this.emit('scan:raw', line);
-      this.buffer = Buffer.alloc(0);
-    }
   }
 }

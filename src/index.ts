@@ -1,6 +1,9 @@
-import { hidEmitter, listHidDevices } from './devices/hidDiscovery.js';
+import { hidEmitter, listHidDevices, cleanupDevice } from './devices/hidDiscovery.js';
 import { HidReader } from './devices/hidReader.js';
 import { logger } from './infra/logger.js';
+import HID from 'node-hid';
+
+const reader = new HidReader();
 
 const vendorIdRaw = process.env['VENDOR_ID'];
 if (!vendorIdRaw) throw new Error('VENDOR_ID must be set');
@@ -15,7 +18,28 @@ if (Number.isNaN(vendorId)) {
 const productName = process.env['PRODUCT'];
 if (!productName) throw new Error('PRODUCT must be set');
 
-const reader = new HidReader(vendorId, productName);
+let currentDevice: HID.HID | null = null;
+hidEmitter.on('device:connected', (found) => {
+  logger.info('Event → Connected');
+
+  // Cerrar dispositivo previo si existe
+  cleanupDevice(currentDevice);
+
+  reader.read(found);
+});
+
+hidEmitter.on('device:reconnect', (found) => {
+  logger.info('Event → Reconnected');
+
+  cleanupDevice(currentDevice);
+  reader.read(found);
+});
+
+hidEmitter.on('device:disconnected', () => {
+  logger.info('Event → Disconnected');
+  cleanupDevice(currentDevice);
+  currentDevice = null;
+});
 
 reader.on('scan:raw', (line) => {
   logger.info(`Readed code: ${line}`);
@@ -25,24 +49,9 @@ reader.on('error', (err) => {
   logger.error({ err }, 'HID Error');
 });
 
-hidEmitter.on('device:connected', () => {
-  logger.info('Event → Connected');
-  reader.start();
-});
-
-hidEmitter.on('device:reconnect', () => {
-  logger.info('Event → Reconnected');
-  reader.start();
-});
-
-hidEmitter.on('device:disconnected', () => {
-  logger.info('Event → Disconnected');
-  reader.stop();
-});
-
 listHidDevices(vendorId, productName);
 
 process.on('SIGINT', () => {
-  reader.stop();
+  cleanupDevice(currentDevice);
   process.exit(0);
 });

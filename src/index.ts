@@ -12,24 +12,17 @@ if (Number.isNaN(vendorId)) {
   throw new Error(`VENDOR_ID is not a valid number: "${vendorIdRaw}"`);
 }
 
-const productIdRaw = process.env['PRODUCT'];
-if (!productIdRaw) throw new Error('PRODUCT_ID must be set');
-const productId = productIdRaw;
+const productName = process.env['PRODUCT'];
+if (!productName) throw new Error('PRODUCT must be set');
 
-if (Number.isNaN(productId)) {
-  throw new Error(`PRODUCT_ID is not a valid number: "${productIdRaw}"`);
-}
-
-const productName = process.env['PRODUCT'] ?? '';
-
-const reader = new HidReader(vendorId, productId);
+const reader = new HidReader(vendorId, productName);
 
 reader.on('scan:raw', (line) => {
-  logger.info(`Código leído: ${line}`);
+  logger.info(`Readed code: ${line}`);
 });
 
 reader.on('error', (err) => {
-  logger.error({ err }, 'Error en HID');
+  logger.error({ err }, 'HID Error');
 });
 
 hidEmitter.on('device:connected', () => {

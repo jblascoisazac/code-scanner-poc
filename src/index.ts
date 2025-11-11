@@ -3,19 +3,22 @@ import { HidReader } from './devices/hidReader.js';
 import { logger } from './infra/logger.js';
 import HID from 'node-hid';
 
+const HEX_START = '0x';
 const reader = new HidReader();
 
 const vendorIdRaw = process.env['VENDOR_ID'];
 if (!vendorIdRaw) throw new Error('VENDOR_ID must be set');
-const vendorId = vendorIdRaw.trim().toLowerCase().startsWith('0x')
-  ? parseInt(vendorIdRaw, 16)
-  : parseInt(vendorIdRaw, 10);
 
+let vendorId = Number(vendorIdRaw);
+if (vendorIdRaw.trim().toLowerCase().startsWith(HEX_START)) {
+  vendorId = parseInt(vendorIdRaw, 16);
+}
 if (Number.isNaN(vendorId)) {
   throw new Error(`VENDOR_ID is not a valid number: "${vendorIdRaw}"`);
 }
 
 const productName = process.env['PRODUCT'];
+
 if (!productName) throw new Error('PRODUCT must be set');
 
 let currentDevice: HID.HID | null = null;

@@ -6,12 +6,6 @@ import { logger } from '../infra/logger.js';
 
 export const hidEmitter = new EventEmitter();
 
-export function cleanupDevice(device: HID.HID | null) {
-  if (!device) return;
-  device.removeAllListeners();
-  device.close();
-}
-
 let isConnected = false;
 let serialNumber: string | undefined;
 let intervalId: NodeJS.Timeout | null = null;

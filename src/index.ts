@@ -1,11 +1,8 @@
-import { hidEmitter, listHidDevices, cleanupDevice } from './devices/hidDiscovery.js';
-import { HidReader } from './devices/hidReader.js';
-import { logger } from './infra/logger.js';
+import { hidEmitter, listHidDevices } from './devices/hidDiscovery.js';
+import { parseHidData, parserEmitter } from './devices/hidParser.js';
 import HID from 'node-hid';
 
 const HEX_START = '0x';
-const reader = new HidReader();
-
 const vendorIdRaw = process.env['VENDOR_ID'];
 if (!vendorIdRaw) throw new Error('VENDOR_ID must be set');
 
@@ -18,40 +15,51 @@ if (Number.isNaN(vendorId)) {
 }
 
 const productName = process.env['PRODUCT'];
-
 if (!productName) throw new Error('PRODUCT must be set');
 
 let currentDevice: HID.HID | null = null;
+
+// Global listener for parsed lines
+parserEmitter.on('raw:scan', (line: string) => {
+  console.log('Readed code:', line);
+});
+
+// Initial connection
 hidEmitter.on('device:connected', (found) => {
-  logger.info('Event → Connected');
-
-  // Cerrar dispositivo previo si existe
   cleanupDevice(currentDevice);
-
-  reader.read(found);
+  try {
+    currentDevice = new HID.HID(found.path);
+    currentDevice.on('data', (data: Buffer) => parseHidData(data));
+    currentDevice.on('error', () => cleanupDevice(currentDevice));
+  } catch {}
 });
 
+// Reconnect
 hidEmitter.on('device:reconnect', (found) => {
-  logger.info('Event → Reconnected');
-
   cleanupDevice(currentDevice);
-  reader.read(found);
+  try {
+    currentDevice = new HID.HID(found.path);
+    currentDevice.on('data', (data: Buffer) => parseHidData(data));
+    currentDevice.on('error', () => cleanupDevice(currentDevice));
+  } catch {}
 });
 
+// Disconnect
 hidEmitter.on('device:disconnected', () => {
-  logger.info('Event → Disconnected');
   cleanupDevice(currentDevice);
-  currentDevice = null;
 });
 
-reader.on('scan:raw', (line) => {
-  logger.info(`Readed code: ${line}`);
-});
+// Device cleanup
+function cleanupDevice(device: HID.HID | null) {
+  if (!device) return;
+  device.removeAllListeners();
+  try {
+    device.close();
+  } catch {}
+  if (device === currentDevice) currentDevice = null;
+}
 
-reader.on('error', (err) => {
-  logger.error({ err }, 'HID Error');
-});
-
+// init discovery
 listHidDevices(vendorId, productName);
 
 process.on('SIGINT', () => {

@@ -25,10 +25,13 @@ parserEmitter.on('raw:scan', (line: string) => {
   validateBarCode(line);
 });
 
-barCodeEmitter.on('code:validated', ({ barcode, simbology, valid }) => {
-  console.log(
-    `Scanned Code: ${barcode} | Symbology: ${simbology} | Valid: ${valid ? 'Yes' : 'No'}`
-  );
+barCodeEmitter.on('code:validated', ({ barcode, simbology, valid, ts }) => {
+  if (!valid) {
+    console.warn(`Invalid barcode deteceted: ${barcode}`);
+  } else {
+    console.log(`Symbology: ${simbology} | The barcode is valid | Timestamp: ${ts}`);
+    console.log(`Scanned Code: ${barcode}`);
+  }
 });
 
 // Initial connection
@@ -73,3 +76,5 @@ process.on('SIGINT', () => {
   cleanupDevice(currentDevice);
   process.exit(0);
 });
+
+validateBarCode(']E012345ABCDE<I');

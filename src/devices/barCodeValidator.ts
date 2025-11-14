@@ -177,66 +177,55 @@ function calculateMod10Checksum(barcodeData: string): number {
 export function validateBarCode(barcodeData: string): void {
   const symbologyType = detectBarcodeSymbology(barcodeData);
   let isValid = false;
+  let errorMessage: string | undefined;
 
   try {
-    // VALIDACIÓN: EAN-13, EAN-8, UPC-A, UPC-E
-    if (['EAN-13', 'EAN-8', 'UPC-A', 'UPC-E'].includes(symbologyType)) {
-      // Caso especial: UPC-E requiere expansión antes de validar
-      if (symbologyType === 'UPC-E') {
-        const expandedToUpcA = expandUpcEtoUpcA(barcodeData);
-        const expectedCheckDigit = calculateMod10Checksum(expandedToUpcA);
-        const actualCheckDigit = Number(barcodeData[7]); // último dígito de UPC-E
+    switch (symbologyType) {
+      case 'EAN-13':
+      case 'EAN-8':
+      case 'UPC-A': {
+        const expectedCheckDigit = calculateMod10Checksum(barcodeData);
+        const actualCheckDigit = Number(barcodeData.slice(-1));
         isValid = expectedCheckDigit === actualCheckDigit;
-
-        barCodeEmitter.emit('code:validated', {
-          barcode: barcodeData,
-          simbology: symbologyType,
-          valid: isValid,
-        });
-        return;
+        break;
       }
 
-      // EAN-13, EAN-8, UPC-A: validación directa
-      const expectedCheckDigit = calculateMod10Checksum(barcodeData);
-      const actualCheckDigit = Number(barcodeData.slice(-1));
-      isValid = expectedCheckDigit === actualCheckDigit;
-    }
+      case 'UPC-E': {
+        const expanded = expandUpcEtoUpcA(barcodeData);
+        const expectedCheckDigit = calculateMod10Checksum(expanded);
+        const actualCheckDigit = Number(barcodeData[7]);
+        isValid = expectedCheckDigit === actualCheckDigit;
+        break;
+      }
 
-    // VALIDACIÓN: Code128-A
-    else if (symbologyType === 'Code128-A') {
-      isValid = isValidCode128A(barcodeData);
-    }
+      case 'Code128-A':
+        isValid = isValidCode128A(barcodeData);
+        break;
 
-    // VALIDACIÓN: Code128-B
-    else if (symbologyType === 'Code128-B') {
-      isValid = isValidCode128B(barcodeData);
-    }
+      case 'Code128-B':
+        isValid = isValidCode128B(barcodeData);
+        break;
 
-    // VALIDACIÓN: Code128-C
-    else if (symbologyType === 'Code128-C') {
-      isValid = isValidCode128C(barcodeData);
-    }
+      case 'Code128-C':
+        isValid = isValidCode128C(barcodeData);
+        break;
 
-    // SIMBOLOGÍA NO SOPORTADA
-    else {
-      throw new Error(`Unsupported barcode symbology: ${symbologyType}`);
+      case 'UNKNOWN':
+        throw new Error(`Unsupported or unrecognized barcode format`);
     }
-
-    // EMITIR RESULTADO DE VALIDACIÓN
-    barCodeEmitter.emit('code:validated', {
-      barcode: barcodeData,
-      simbology: symbologyType,
-      valid: isValid,
-    });
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
+  } catch (err) {
+    errorMessage = err instanceof Error ? err.message : String(err);
+    isValid = false;
     console.error(`Validation error for barcode "${barcodeData}": ${errorMessage}`);
-
-    barCodeEmitter.emit('code:validated', {
-      barcode: barcodeData,
-      simbology: symbologyType,
-      valid: false,
-      error: errorMessage,
-    });
   }
+  const now = new Date();
+  const ts = now.toLocaleString('es-ES');
+  // Emitir un único evento con toda la información
+  barCodeEmitter.emit('code:validated', {
+    barcode: barcodeData,
+    simbology: symbologyType,
+    valid: isValid,
+    ts,
+    error: errorMessage,
+  });
 }

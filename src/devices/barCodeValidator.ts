@@ -12,41 +12,41 @@ type Symbology =
   | 'UPC-E'
   | 'UNKNOWN';
 
-// Constantes descriptivas
+// Descriptive constants
 const ASCII_PRINTABLE_START = 32;
 const ASCII_PRINTABLE_END = 126;
 const CODE128_A_MAX = 95;
 const MOD_10 = 10;
 
 /*
- * DETECCIÓN DE SIMBOLOGÍA
- * Identifica el tipo de código de barras basado en su contenido
+ * SYMBOLOGY DETECTION
+ * Identifies the barcode symbology based on its content
  */
 function detectBarcodeSymbology(barcodeData: string): Symbology {
   const isOnlyNumeric = /^\d+$/.test(barcodeData);
   const barcodeLength = barcodeData.length;
 
-  // GS1 AIM ID prefixes (estándar de scanners HID)
+  // GS1 AIM ID prefixes (standard for HID scanners)
   if (barcodeData.startsWith(']C')) return 'Code128-C';
   if (barcodeData.startsWith(']A')) return 'Code128-A';
   if (barcodeData.startsWith(']B')) return 'Code128-B';
 
-  // EAN-13: exactamente 13 dígitos
+  // EAN-13: exactly 13 digits
   if (isOnlyNumeric && barcodeLength === 13) return 'EAN-13';
 
-  // UPC-A: exactamente 12 dígitos
+  // UPC-A: exactly 12 digits
   if (isOnlyNumeric && barcodeLength === 12) return 'UPC-A';
 
-  // UPC-E: exactamente 8 dígitos, comienza con 0 o 1
+  // UPC-E: exactly 8 digits, starts with 0 or 1
   if (isOnlyNumeric && barcodeLength === 8 && (barcodeData[0] === '0' || barcodeData[0] === '1')) {
     const expansionDigit = Number(barcodeData[6]);
     if (expansionDigit >= 0 && expansionDigit <= 9) return 'UPC-E';
   }
 
-  // EAN-8: exactamente 8 dígitos
+  // EAN-8: exactly 8 digits
   if (isOnlyNumeric && barcodeLength === 8) return 'EAN-8';
 
-  // Code128-C: solo números con longitud par
+  // Code128-C: numeric only with even length
   if (isOnlyNumeric && barcodeLength % 2 === 0) return 'Code128-C';
 
   // Code128-A: ASCII 32–95
@@ -59,8 +59,8 @@ function detectBarcodeSymbology(barcodeData: string): Symbology {
 }
 
 /*
- * VALIDACIÓN CODE128-A
- * Verifica que todos los caracteres estén en rango válido (32–95)
+ * CODE128-A VALIDATION
+ * Verifies that all characters are within the valid range (32–95)
  */
 function isValidCode128A(barcodeData: string): boolean {
   for (let charIndex = 0; charIndex < barcodeData.length; charIndex++) {
@@ -73,8 +73,8 @@ function isValidCode128A(barcodeData: string): boolean {
 }
 
 /*
- * VALIDACIÓN CODE128-B
- * Verifica que todos los caracteres estén en rango válido (32–126)
+ * CODE128-B VALIDATION
+ * Verifies that all characters are within the valid range (32–126)
  */
 function isValidCode128B(barcodeData: string): boolean {
   for (let charIndex = 0; charIndex < barcodeData.length; charIndex++) {
@@ -87,8 +87,8 @@ function isValidCode128B(barcodeData: string): boolean {
 }
 
 /*
- * VALIDACIÓN CODE128-C
- * Verifica que sea solo números con longitud par
+ * CODE128-C VALIDATION
+ * Verifies that the barcode is numeric only and has even length
  */
 function isValidCode128C(barcodeData: string): boolean {
   const isNumericOnly = /^\d+$/.test(barcodeData);
@@ -97,8 +97,8 @@ function isValidCode128C(barcodeData: string): boolean {
 }
 
 /*
- * EXPANSIÓN UPC-E → UPC-A
- * Convierte formato comprimido UPC-E (8 dígitos) a formato UPC-A (12 dígitos)
+ * UPC-E → UPC-A EXPANSION
+ * Converts compressed UPC-E format (8 digits) to UPC-A format (12 digits)
  */
 function expandUpcEtoUpcA(upcEBarcode: string): string {
   if (!/^\d{8}$/.test(upcEBarcode)) {
@@ -116,14 +116,14 @@ function expandUpcEtoUpcA(upcEBarcode: string): string {
     checkDigit,
   ] = upcEBarcode.split('');
 
-  // UPC-E solo válido para 0 o 1
+  // UPC-E valid only for leading 0 or 1
   if (numberSystemDigit !== '0' && numberSystemDigit !== '1') {
     throw new Error('UPC-E must start with 0 or 1');
   }
 
   let manufacturerCode = '';
 
-  // Expansión según dígito de expansión (posición 7)
+  // Expansion based on the expansion digit (position 7)
   switch (expansionDigit) {
     case '0':
     case '1':
@@ -148,9 +148,9 @@ function expandUpcEtoUpcA(upcEBarcode: string): string {
 }
 
 /*
- * CHECKSUM MOD10 (GS1)
- * Calcula checksum para EAN/UPC usando algoritmo MOD10
- * Algoritmo: desde la derecha, alterna multiplicadores 3 y 1
+ * MOD10 CHECKSUM (GS1)
+ * Calculates checksum for EAN/UPC using the MOD10 algorithm
+ * Algorithm: from the right, alternate multipliers 3 and 1
  */
 function calculateMod10Checksum(barcodeData: string): number {
   const barcodeDigits = barcodeData.split('').map(Number);
@@ -171,8 +171,48 @@ function calculateMod10Checksum(barcodeData: string): number {
 }
 
 /*
- * FUNCIÓN PRINCIPAL DE VALIDACIÓN
- * Detecta tipo de código y valida según reglas específicas
+Below are functions used to validate the MOD103 checksum.
+The current real-world issue is that some scanners do not emit a proper
+Code128 checksum character; a correctly configured scanner should provide
+the final checksum symbol for validation.
+
+function code128Value(char: string): number {
+  const code = char.charCodeAt(0);
+  return code - 32;
+}
+
+function validate128Mod103(barcodeData: string, set: 'A' | 'B' | 'C'): boolean {
+  if (barcodeData.length < 2) return false;
+
+  const data = barcodeData.slice(0, -1);
+  const checksumChar = barcodeData.slice(-1);
+  const checksumCharValue = code128Value(checksumChar);
+
+  let sum = 0;
+  let position = 1;
+
+  if (set === 'C') {
+    for (let i = 0; i < data.length; i += 2) {
+      const pair = Number(data.substring(i, i + 2));
+      sum += pair * position;
+      position++;
+    }
+  } else {
+    for (const c of data) {
+      sum += code128Value(c) * position++;
+    }
+  }
+
+  const startCodeValue = set === 'A' ? 103 : set === 'B' ? 104 : 105;
+
+  const mod = (startCodeValue + sum) % 103;
+  return mod === checksumCharValue;
+}
+
+*/
+/*
+ * MAIN VALIDATION FUNCTION
+ * Detects the barcode type and validates according to specific rules
  */
 export function validateBarCode(barcodeData: string): void {
   const symbologyType = detectBarcodeSymbology(barcodeData);
@@ -220,7 +260,7 @@ export function validateBarCode(barcodeData: string): void {
   }
   const now = new Date();
   const ts = now.toLocaleString('es-ES');
-  // Emitir un único evento con toda la información
+  // Emit a single event with all information
   barCodeEmitter.emit('code:validated', {
     barcode: barcodeData,
     simbology: symbologyType,

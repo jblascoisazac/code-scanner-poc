@@ -30,7 +30,6 @@ barCodeEmitter.on('code:validated', ({ barcode, simbology, valid, ts }) => {
     console.warn(`Invalid barcode deteceted: ${barcode}`);
   } else {
     console.log(`Symbology: ${simbology} | The barcode is valid | Timestamp: ${ts}`);
-    console.log(`Scanned Code: ${barcode}`);
   }
 });
 

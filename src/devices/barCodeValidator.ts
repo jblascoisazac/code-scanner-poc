@@ -23,8 +23,8 @@ function computeEanUpcMod10(code: string): number {
   if (!code) return -1;
   const digits = code.split('').map(Number);
   const body = digits.slice(0, -1);
-  let sum = 0,
-    weight = 3;
+  let sum = 0;
+  let weight = 3;
   for (let i = body.length - 1; i >= 0; i--) {
     sum += (body[i] ?? 0) * weight;
     weight = weight === 3 ? 1 : 3;
@@ -161,7 +161,6 @@ export function validateBarCode(barcodeData: string): void {
   }
 
   barCodeEmitter.emit('code:validated', {
-    barcode: barcodeData,
     simbology: detected,
     valid,
     ts: new Date().toLocaleString('es-ES'),

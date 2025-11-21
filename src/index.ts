@@ -25,10 +25,8 @@ parserEmitter.on('raw:scan', (line: string) => {
   validateBarCode(line);
 });
 
-barCodeEmitter.on('code:validated', ({ barcode, simbology, valid }) => {
-  console.log(
-    `Scanned Code: ${barcode} | Symbology: ${simbology} | Valid: ${valid ? 'Yes' : 'No'}`
-  );
+barCodeEmitter.on('code:validated', ({ simbology, valid, ts }) => {
+  console.log(`Symbology: ${simbology} | Valid: ${valid ? 'Yes' : 'No'} | TimeStamp: ${ts}`);
 });
 
 // Initial connection

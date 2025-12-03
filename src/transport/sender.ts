@@ -11,7 +11,7 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export function startSender() {
+export async function startSender() {
   setInterval(async () => {
     const event = await getFirstEvent();
     if (!event) return;

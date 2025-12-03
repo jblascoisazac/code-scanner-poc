@@ -1,18 +1,26 @@
 import { Low } from 'lowdb';
 import { JSONFile } from 'lowdb/node';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const dbFile = path.join(process.cwd(), 'queue.json');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const dbFile = path.join(__dirname, 'queue.json');
 const db = new Low<{ events: any[] }>(new JSONFile(dbFile), { events: [] });
 
 async function init() {
   await db.read();
-  db.data ||= { events: [] };
+  // Solo aseguramos que events exista y sea un array
+  if (!Array.isArray(db.data!.events)) {
+    db.data!.events = [];
+    await db.write();
+  }
 }
 
-export async function enqueueEvent(event: { url: string; payload: any }) {
+export async function enqueueEvent(url: string, payload: any) {
   await init();
-  db.data!.events.push(event);
+  db.data!.events.push({ url: url, payload: payload });
   await db.write();
 }
 

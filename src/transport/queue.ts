@@ -16,6 +16,11 @@ export async function enqueueEvent(event: { url: string; payload: any }) {
   await db.write();
 }
 
+export async function getFirstEvent() {
+  await init();
+  return db.data!.events[0];
+}
+
 export async function dequeueEvent() {
   await init();
   const event = db.data!.events.shift();

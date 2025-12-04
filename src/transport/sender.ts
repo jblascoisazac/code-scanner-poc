@@ -6,6 +6,8 @@ const MAX_RETRIES = 3;
 const CIRCUIT_PAUSE = 60000; // 60 seconds
 
 let consecutiveFailures = 0;
+let circuitOpen = false;
+let running = false;
 
 function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -13,30 +15,46 @@ function delay(ms: number) {
 
 export async function startSender() {
   setInterval(async () => {
-    const event = await getFirstEvent();
-    if (!event) return;
+    if (running) return;
+    running = true;
 
-    let attempt = 0;
+    //Ensure that no events are being processed while circuit is open
+    while (true) {
+      if (circuitOpen) {
+        await delay(CIRCUIT_PAUSE);
+        continue;
+      }
 
-    //POST request with retries and circuit breaker
-    while (attempt <= MAX_RETRIES) {
-      const backoffTime = Math.pow(2, attempt) * 1000;
-      try {
-        axios.post(event.url, event.payload, { timeout: REQUEST_TIMEOUT });
-        await dequeueEvent();
-        consecutiveFailures = 0;
-        break;
-      } catch (error) {
-        attempt++;
-        consecutiveFailures++;
-        if (consecutiveFailures >= MAX_RETRIES) {
-          setTimeout(() => {
-            attempt = 0;
+      //Obtain the first event in the queue
+      const event = await getFirstEvent();
+      if (!event) break;
+
+      let attempt = 0;
+      while (attempt < MAX_RETRIES) {
+        try {
+          //Try to send the event, if successful, remove it form the queue
+          await axios.post(event.url, event.payload, { timeout: REQUEST_TIMEOUT });
+          await dequeueEvent();
+          consecutiveFailures = 0;
+          break;
+        } catch (error) {
+          attempt++;
+          consecutiveFailures++;
+
+          if (consecutiveFailures >= MAX_RETRIES) {
+            circuitOpen = true;
+            await delay(CIRCUIT_PAUSE);
+            console.warn('Too many consecutive failures. Pausing for a minute.');
+            circuitOpen = false;
+            // Reset attemps and failures after circuit pause
             consecutiveFailures = 0;
-          }, CIRCUIT_PAUSE);
+            attempt = 0;
+          } else if (attempt < MAX_RETRIES) {
+            await delay(Math.pow(2, attempt) * 1000); //exponential backoff
+          }
         }
-        await delay(backoffTime);
       }
     }
+    running = false; // Mark as not running for next tick
   }, 1000);
 }

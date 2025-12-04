@@ -3,35 +3,46 @@ import { JSONFile } from 'lowdb/node';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+interface EventEntry {
+  url: string;
+  payload: EventPayload;
+}
+export interface EventPayload {
+  simbology: string;
+  valid: string;
+  ts: string;
+}
 
-const dbFile = path.join(__dirname, 'queue.json');
-const db = new Low<{ events: any[] }>(new JSONFile(dbFile), { events: [] });
+export class Queue {
+  private __filename = fileURLToPath(import.meta.url);
+  private __dirname = path.dirname(this.__filename);
+  private dbFile = path.join(this.__dirname, 'queue.json');
+  private db = new Low<{ events: EventEntry[] }>(new JSONFile(this.dbFile), { events: [] });
 
-async function init() {
-  await db.read();
+  async init() {
+    await this.db.read();
 
-  if (!Array.isArray(db.data!.events)) {
-    db.data!.events = [];
-    await db.write();
+    if (!Array.isArray(this.db.data.events)) {
+      this.db.data.events = [];
+      this.db.write();
+    }
   }
-}
 
-export async function enqueueEvent(url: string, payload: any) {
-  await init();
-  db.data!.events.push({ url: url, payload: payload });
-  await db.write();
-}
+  async enqueueEvent(url: string, payload: EventPayload) {
+    await this.init();
+    this.db.data.events.push({ url: url, payload: payload });
+    await this.db.write();
+  }
 
-export async function getFirstEvent() {
-  await init();
-  return db.data!.events[0];
-}
+  async getFirstEvent() {
+    await this.init();
+    return this.db.data.events[0];
+  }
 
-export async function dequeueEvent() {
-  await init();
-  const event = db.data!.events.shift();
-  await db.write();
-  return event;
+  async dequeueEvent() {
+    await this.init();
+    const event = this.db.data.events.shift();
+    await this.db.write();
+    return event;
+  }
 }

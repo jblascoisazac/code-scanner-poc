@@ -11,7 +11,7 @@ const db = new Low<{ events: any[] }>(new JSONFile(dbFile), { events: [] });
 
 async function init() {
   await db.read();
-  // Solo aseguramos que events exista y sea un array
+
   if (!Array.isArray(db.data!.events)) {
     db.data!.events = [];
     await db.write();

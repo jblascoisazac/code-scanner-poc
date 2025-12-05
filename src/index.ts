@@ -22,19 +22,18 @@ if (!productName) throw new Error('PRODUCT must be set');
 
 let currentDevice: HID.HID | null = null;
 
-const sender = new EventSender();
-sender.start();
-
-const queue = new Queue();
-
 // Global listener for parsed lines
 parserEmitter.on('raw:scan', (line: string) => {
   validateBarCode(line);
 });
 
-barCodeEmitter.on('code:validated', async ({ simbology, valid, ts }) => {
-  console.log(`Symbology: ${simbology} | Valid: ${valid ? 'Yes' : 'No'} | TimeStamp: ${ts}`);
-  await queue.enqueueEvent('http://localhost:3000/events', { simbology, valid, ts });
+const queue = new Queue();
+const sender = new EventSender(queue);
+sender.start();
+
+barCodeEmitter.on('code:validated', async ({ simbology, valid }) => {
+  console.log(`Symbology: ${simbology} | Valid: ${valid ? 'Yes' : 'No'}`);
+  await queue.enqueueEvent('http://localhost:3000/events', { simbology, valid });
 });
 
 // Initial connection

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Queue, EventPayload } from './queue.js';
+import { Queue } from './queue.js';
 import { logger } from '../infra/logger.js';
 
 const REQUEST_TIMEOUT = 5000;
@@ -10,12 +10,13 @@ function delay(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export class EventSender extends Queue {
+export class EventSender {
+  private queue: Queue;
   private consecutiveFailures = 0;
   private circuitOpen = false;
 
-  constructor() {
-    super();
+  constructor(queue: Queue) {
+    this.queue = queue;
   }
 
   public async start() {
@@ -27,8 +28,8 @@ export class EventSender extends Queue {
         continue;
       }
 
-      await this.init(); // ensures db is loaded
-      const event = await this.getFirstEvent();
+      await this.queue.init(); // ensures db is loaded
+      const event = await this.queue.getFirstEvent();
       if (!event) {
         await delay(500); // if there are no events, wait before checking again
         continue;
@@ -37,8 +38,8 @@ export class EventSender extends Queue {
       let attempt = 0;
       while (attempt < MAX_RETRIES) {
         try {
-          await axios.post(event.url, event.payload as EventPayload, { timeout: REQUEST_TIMEOUT });
-          await this.dequeueEvent();
+          await axios.post(event.url, event.payload, { timeout: REQUEST_TIMEOUT });
+          await this.queue.dequeueEvent();
           this.consecutiveFailures = 0;
           break;
         } catch (error) {

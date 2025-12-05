@@ -10,7 +10,6 @@ interface EventEntry {
 export interface EventPayload {
   simbology: string;
   valid: string;
-  ts: string;
 }
 
 export class Queue {

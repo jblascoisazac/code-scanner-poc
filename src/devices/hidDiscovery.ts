@@ -3,24 +3,27 @@ import fs from 'fs';
 import path from 'path';
 import { EventEmitter } from 'events';
 import { logger } from '../infra/logger.js';
+import { Connection } from './conecction.js';
 
 export const hidEmitter = new EventEmitter();
 
-export class HidDevice {
+export class HidDevice extends Connection {
   private isConnected = false;
-  private serialNumber: string | undefined;
   private intervalId: NodeJS.Timeout | null = null;
 
   constructor(
-    private vendorId: number,
-    private productName: string
-  ) {}
+    private readonly vendorId: number,
+    private readonly productName: string,
+    codigo: string
+  ) {
+    super(codigo, 'HID');
+  }
 
   /**
    * Inicia el escaneo periódico de dispositivos HID
    * Retorna una función de limpieza
    */
-  public start(): () => void {
+  public connect(): () => void {
     this.intervalId = setInterval(async () => {
       let devices: HID.Device[] = [];
 
@@ -48,6 +51,18 @@ export class HidDevice {
       if (!found) {
         return;
       }
+
+      const deviceInfo: { name?: string; serialNumber?: string } = {};
+
+      if (found.product !== undefined) {
+        deviceInfo.name = found.product;
+      }
+
+      if (found.serialNumber !== undefined) {
+        deviceInfo.serialNumber = found.serialNumber;
+      }
+
+      this.setDeviceInfo(deviceInfo);
 
       // --- Reconnected ---
       if (!this.isConnected && this.serialNumber) {
@@ -77,7 +92,6 @@ export class HidDevice {
       }
     }, 1000);
 
-    // Cleanup
     return () => this.stop();
   }
 
@@ -85,7 +99,7 @@ export class HidDevice {
    * Detiene el escaneo
    */
   public stop(): void {
-    if (this.intervalId !== null) {
+    if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
     }
@@ -95,14 +109,18 @@ export class HidDevice {
    * Persiste información del dispositivo
    */
   private saveDevice(devices: HID.Device[]): void {
-    const jsonString = JSON.stringify(devices, null, 2);
     const filePath = path.resolve('./devices.json');
 
     try {
-      fs.writeFileSync(filePath, jsonString);
+      fs.writeFileSync(filePath, JSON.stringify(devices, null, 2));
       logger.info(`Device information saved to ${filePath}`);
     } catch (err) {
       logger.error({ err }, 'Error writing file');
     }
+  }
+
+  public override disconnect(): void {
+    this.stop();
+    this.isConnected = false;
   }
 }

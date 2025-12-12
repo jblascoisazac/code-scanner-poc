@@ -2,6 +2,8 @@ import { barCodeEmitter, validateBarCode } from './devices/barCodeValidator.js';
 import { hidEmitter, listHidDevices } from './devices/hidDiscovery.js';
 import { parseHidData, parserEmitter } from './devices/hidParser.js';
 import HID from 'node-hid';
+import { EventSender } from './transport/sender.js';
+import { Queue } from './transport/queue.js';
 
 const HEX_START = '0x';
 const vendorIdRaw = process.env['VENDOR_ID'];
@@ -25,8 +27,13 @@ parserEmitter.on('raw:scan', (line: string) => {
   validateBarCode(line);
 });
 
-barCodeEmitter.on('code:validated', ({ simbology, valid, ts }) => {
-  console.log(`Symbology: ${simbology} | Valid: ${valid ? 'Yes' : 'No'} | TimeStamp: ${ts}`);
+const queue = new Queue();
+const sender = new EventSender(queue);
+sender.start();
+
+barCodeEmitter.on('code:validated', async ({ simbology, valid }) => {
+  console.log(`Symbology: ${simbology} | Valid: ${valid ? 'Yes' : 'No'}`);
+  await queue.enqueueEvent('http://localhost:3000/events', { simbology, valid });
 });
 
 // Initial connection
